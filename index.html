@@ -15,7 +15,7 @@
             margin: 0;
             background: url('https://i.imgur.com/C9TeKec.jpg') no-repeat center/cover;
             text-shadow: 2px 2px 2px black;
-            color: #fff;
+            color: white; /* Define a cor do texto para branco */
         }
 
         h1 {
@@ -48,6 +48,7 @@
         .envelope .cartao-conteudo {
             display: none;
             padding: 10px;
+            color: #fff;
             max-height: 5em;
             overflow: hidden;
             word-wrap: break-word;
@@ -62,8 +63,8 @@
             border: 1px solid #ddd;
             border-radius: 5px;
             resize: none;
-            background-color: #000;
             color: #fff;
+            background-color: #000;
         }
 
         #botao-adicionar {
@@ -99,70 +100,43 @@
     <button id="botao-adicionar">Adicionar Cartão</button>
     <div id="quadro"></div>
 
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyC32Hh9b2Ks126-nunnFUGB_G2tn9Y01bo",
+            authDomain: "quadro-5fb37.firebaseapp.com",
+            projectId: "quadro-5fb37",
+            storageBucket: "quadro-5fb37.appspot.com",
+            messagingSenderId: "7384736027",
+            appId: "1:7384736027:web:4bb8d8eccaa7b28b6173be"
+        };
+      
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
         const entradaTextarea = document.getElementById("entrada");
         const botaoAdicionar = document.getElementById("botao-adicionar");
         const quadroDiv = document.getElementById("quadro");
 
-        const envelopes = JSON.parse(localStorage.getItem("envelopes")) || [];
+        function adicionarMensagemAoQuadro(mensagem) {
+            const envelopeDiv = document.createElement("div");
+            envelopeDiv.className = "envelope";
+            envelopeDiv.innerHTML = `
+                <div class="cartao-conteudo">${mensagem}</div>
+            `;
+            quadroDiv.appendChild(envelopeDiv);
 
-        function salvarEnvelopes() {
-            localStorage.setItem("envelopes", JSON.stringify(envelopes));
-        }
-
-        function atualizarEnvelopes() {
-            quadroDiv.innerHTML = "";
-
-            envelopes.forEach(envelopeTexto => {
-                const envelopeDiv = document.createElement("div");
-                envelopeDiv.className = "envelope";
-                envelopeDiv.innerHTML = `
-                    <div class="cartao-conteudo">${envelopeTexto}</div>
-                `;
-                quadroDiv.appendChild(envelopeDiv);
-
-                envelopeDiv.addEventListener("click", () => {
-                    envelopeDiv.classList.toggle("aberto");
-                });
+            envelopeDiv.addEventListener("click", () => {
+                envelopeDiv.classList.toggle("aberto");
             });
         }
 
         botaoAdicionar.addEventListener("click", () => {
             const novaMensagem = entradaTextarea.value;
             if (novaMensagem.trim() !== "") {
-                envelopes.push(novaMensagem);
-                salvarEnvelopes();
-                entradaTextarea.value = "";
-                atualizarEnvelopes();
-            }
-        });
-
-        atualizarEnvelopes();
-
-        // Configuração do Firebase
-        var firebaseConfig = {
-            apiKey: "AIzaSyAkIoNB1pN2F0nocbblA-Wxa7Ux5kZM9to",
-            authDomain: "quadro-de-mensagens.firebaseapp.com",
-            projectId: "quadro-de-mensagens",
-            storageBucket: "quadro-de-mensagens.appspot.com",
-            messagingSenderId: "1047043097144",
-            appId: "1:1047043097144:web:cf577961f45c300d055ccd"
-        };
-        // Inicializa o Firebase
-        firebase.initializeApp(firebaseConfig);
-
-        // Referência ao banco de dados do Firebase
-        const database = firebase.database();
-
-        // Adiciona um listener para o botão
-        botaoAdicionar.addEventListener("click", () => {
-            const novaMensagem = entradaTextarea.value;
-            if (novaMensagem.trim() !== "") {
-                // Cria uma referência para a coleção "mensagens"
-                const mensagensRef = database.ref("mensagens");
-                
-                // Adiciona a nova mensagem ao banco de dados
-                mensagensRef.push({
+                const messagesRef = database.ref("mensagens");
+                messagesRef.push().set({
                     mensagem: novaMensagem
                 });
 
@@ -170,30 +144,14 @@
             }
         });
 
-        // Função para carregar mensagens do Firebase
         function carregarMensagens() {
-            const mensagensRef = database.ref("mensagens");
-            
-            mensagensRef.on("value", (snapshot) => {
-                quadroDiv.innerHTML = "";
-
-                snapshot.forEach((childSnapshot) => {
-                    const mensagem = childSnapshot.val().mensagem;
-                    const envelopeDiv = document.createElement("div");
-                    envelopeDiv.className = "envelope";
-                    envelopeDiv.innerHTML = `
-                        <div class="cartao-conteudo">${mensagem}</div>
-                    `;
-                    quadroDiv.appendChild(envelopeDiv);
-
-                    envelopeDiv.addEventListener("click", () => {
-                        envelopeDiv.classList.toggle("aberto");
-                    });
-                });
+            const messagesRef = database.ref("mensagens");
+            messagesRef.on("child_added", (snapshot) => {
+                const mensagem = snapshot.val().mensagem;
+                adicionarMensagemAoQuadro(mensagem);
             });
         }
 
-        // Chama a função para carregar mensagens
         carregarMensagens();
     </script>
 </body>
